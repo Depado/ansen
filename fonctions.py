@@ -8,6 +8,7 @@ import requests
 import time
 import math
 import re
+import os
 # import sqlalchemy  # Pass to ORM command
 
 
@@ -112,5 +113,22 @@ def update_db_amd_list(db):
 
 
 def download_amd(db):
-    test = db
-    print(test)
+    raw_path = os.getcwd()
+    if not os.path.exists('storage'):
+        os.mkdir('storage', mode=0o777)
+
+    database = lite.connect(db)
+    c = database.cursor()
+    c.execute("SELECT * from amendements")
+    rows = c.fetchall()
+    for row in rows:
+        amd_path = "storage\\" + str(row[0]) +"\\" + str(row[1])
+        if not os.path.exists(amd_path):
+            os.makedirs(amd_path, mode=0o777)
+        url_dl = row[3][:-3] + 'pdf'
+        r = requests.get(url_dl, stream=True)
+        if r.status_code == 200:
+            file_name = url_dl.split("/")[-1]
+            with open(raw_path + "\\"+ amd_path +"\\" + file_name, 'wb') as f:
+                for chunk in r:
+                    f.write(chunk)

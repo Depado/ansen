@@ -16,3 +16,5 @@ delta2 = time.time() - start_time - delta
 print('Update OK - %s' % delta2)
 
 download_amd('AN.db')
+delta3 = time.time() - start_time - delta - delta2
+print('Update OK - %s' % delta3)

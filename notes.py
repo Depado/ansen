@@ -14,7 +14,15 @@ query json:
 #  http://www2.assemblee-nationale.fr/recherche/query_amendements?typeDocument=amendement&idExamen=3265&idDossierLegislatif=31756&numAmend=&idAuteur=&idArticle=&idAlinea=&sort=&dateDebut=&dateFin=&periodeParlementaire=&texteRecherche=&rows=500&format=html&tri=ordreTexteasc&start=1&typeRes=liste
 http://www2.assemblee-nationale.fr/recherche/query_amendements?typeDocument=amendement&idExamen=3293&idDossierLegislatif=31757&numAmend=&idAuteur=&idArticle=&idAlinea=&sort=&dateDebut=&dateFin=&periodeParlementaire=&texteRecherche=&rows=500&format=html&tri=ordreTexteasc&start=1&typeRes=liste
 
-# Décomposition de la requete JQuery, adressable avec un simple requests
+
+# Décomposition de la requete JQuery pour lister les examens, adressable avec un simple requests
+
+# http://www2.assemblee-nationale.fr/recherche/query_amendements?typeDocument=amendement
+# &idDossierLegislatif=33309
+# &idExamen=&idArticle=&idAlinea=&sort=&numAmend=&idAuteur=&typeRes=facettes
+
+
+# Décomposition de la requete JQuery pour lister les amendements, adressable avec un simple requests
 
 # http://www2.assemblee-nationale.fr/recherche/query_amendements?typeDocument=amendement
 # &idExamen=3265
