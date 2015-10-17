@@ -2,18 +2,18 @@
 # -*- coding: UTF-8 -*-
 # __author__ = 'Benjamin'
 
-import os, re, math, pdb
+import os, re, math
 import requests
 from lxml import html
 
-from sqlalchemy import Column, Integer, String, create_engine, func
+from sqlalchemy import Column, Boolean, Integer, String, create_engine, func
 from sqlalchemy.types import DateTime
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
 # SQLAlchemy session and db opening
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
-engine = create_engine('sqlite:///{}'.format(os.path.join(SCRIPT_DIR, 'test.db')))
+engine = create_engine('sqlite:///{}'.format(os.path.join(SCRIPT_DIR, 'AN.db')))
 Base = declarative_base()
 Session = sessionmaker(bind=engine)
 session = Session()
@@ -28,7 +28,7 @@ class Projets(Base):
     nom_dossier = Column(String)
     n_examen = Column(Integer)
     nom_examen = Column(String)
-    nb_amd = Column(Integer, default = 0)
+    nb_amd = Column(Integer, default=0)
     last_check = Column(DateTime(timezone=True), default=func.now())
     sqlite_autoincrement = True
 
@@ -40,6 +40,7 @@ class Amendements(Base):
     n_examen = Column(Integer)
     n_amendement = Column(Integer)
     url_amendement = Column(String)
+    downloaded_status = Column(Boolean, default=False)
     date_created = Column(DateTime(timezone=True), default=func.now())
     sqlite_autoincrement = True
 
@@ -47,12 +48,12 @@ class Amendements(Base):
 def get_or_create(session, model, **kwargs):
     instance = session.query(model).filter_by(**kwargs).first()
     if instance:
-        return instance
+        return instance, False
     else:
         instance = model(**kwargs)
         session.add(instance)
         session.commit()
-        return instance
+        return instance, True
 
 
 def get_projectlist(url, type_ed):  # Get project list as 'dossier' or 'examen'
@@ -83,12 +84,12 @@ def update_projets_list():
         list_examen_name = []
         query_url = 'http://www2.assemblee-nationale.fr/recherche/query_amendements?typeDocument=amendement'\
                     + '&idDossierLegislatif=' + dossier \
-                    +'&idExamen=&idArticle=&idAlinea=&sort=&numAmend=&idAuteur=&typeRes=facettes'
+                    + '&idExamen=&idArticle=&idAlinea=&sort=&numAmend=&idAuteur=&typeRes=facettes'
         try:
             response = requests.get(query_url)
             data = response.json()
         except:
-            data['examenComposite']=[{'txt': 'NULL', 'val': '0000'}]
+            data['examenComposite'] = [{'txt': 'NULL', 'val': '0000'}]
 
         for exam_t in data['examenComposite']:
             list_examen_name.append(exam_t['txt'])
@@ -138,8 +139,38 @@ def update_amd_list(projet):
 
         for j, amd in enumerate(data['data_table']):
             temp_list = data['data_table'][j].split('|')
-            get_or_create(session, Amendements, n_dossier=projet.n_dossier, n_examen=projet.n_examen,
+            temp_amd, created = get_or_create(session, Amendements, n_dossier=projet.n_dossier, n_examen=projet.n_examen,
                                                 n_amendement=temp_list[5], url_amendement=temp_list[6])
+            if not temp_amd.downloaded_status:
+                download_amd(temp_amd)
+
+
+def download_amd(amendement):
+    raw_path = os.getcwd()
+    if not os.path.exists('storage'):
+        os.mkdir('storage', mode=0o777)
+
+    amd_path = "storage\\" + str(amendement.n_dossier) +"\\" + str(amendement.n_examen)
+    if not os.path.exists(amd_path):
+        os.makedirs(amd_path, mode=0o777)
+
+    url_source = amendement.url_amendement[:-3] + 'pdf'
+    file_name = url_source.split("/")[-1]
+    target_file = raw_path + "\\"+ amd_path +"\\" + file_name
+
+    amendement.downloaded_status = download_pdf(url_source, target_file)
+
+
+def download_pdf(source, target):
+    try:
+        r = requests.get(source, stream=True)
+        if r.status_code == 200:
+            with open(target, 'wb') as f:
+                for chunk in r:
+                    f.write(chunk)
+        return True
+    except:
+        return False
 
 
 if __name__ == "__main__":
@@ -150,5 +181,4 @@ if __name__ == "__main__":
     update_projets_list()
     update_amd()
 
-    # pdb.set_trace()
     session.close()
