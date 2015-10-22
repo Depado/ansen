@@ -4,8 +4,12 @@
 
 import os, re, math
 import requests
-import timeit
+import time, timeit
 from lxml import html
+
+import itertools
+from multiprocessing import Pool, Manager, freeze_support
+from math import ceil
 
 from sqlalchemy import Column, Boolean, Integer, String, create_engine, func
 from sqlalchemy.types import DateTime
@@ -53,6 +57,7 @@ def get_or_create(session, model, **kwargs):
     else:
         instance = model(**kwargs)
         session.add(instance)
+        session.commit()
         return instance, True
 
 
@@ -98,33 +103,34 @@ def update_projets_list():
         for j, examen in enumerate(list_examen_id):
             get_or_create(session, Projets, n_dossier=list_dossier_id[i], cat_dossier=categorie,
                                      nom_dossier=projet, n_examen=list_examen_id[j], nom_examen=list_examen_name[j])
-        session.commit()
 
 
-def update_amd():
+def update_amd(args):
 
-    for projet in session.query(Projets).all():
-        query_url = 'http://www2.assemblee-nationale.fr/recherche/query_amendements?typeDocument=amendement&idExamen=' \
-                    + str(projet.n_examen) + '&idDossierLegislatif=' + str(projet.n_dossier) + \
-                    '&missionVisee=&numAmend=&idAuteur=&idArticle=&idAlinea=&sort=&dateDebut=&dateFin=&periodeParlementaire=' + \
-                    '&texteRecherche=&rows=500&format=html&tri=ordreTexteasc&start=1&typeRes=liste'
-        try:
-            response = requests.get(query_url)
-            data = response.json()
-            nb = data['infoGenerales']['nb_resultats']
-        except:
-            nb = 0  # in case of bad format provided
+    projet, item = args
+    # for projet in session.query(Projets).all():
+    query_url = 'http://www2.assemblee-nationale.fr/recherche/query_amendements?typeDocument=amendement&idExamen=' \
+                + str(projet.n_examen) + '&idDossierLegislatif=' + str(projet.n_dossier) + \
+                '&missionVisee=&numAmend=&idAuteur=&idArticle=&idAlinea=&sort=&dateDebut=&dateFin=&periodeParlementaire=' + \
+                '&texteRecherche=&rows=500&format=html&tri=ordreTexteasc&start=1&typeRes=liste'
+    try:
+        response = requests.get(query_url)
+        data = response.json()
+        nb = data['infoGenerales']['nb_resultats']
+    except:
+        nb = 0  # in case of bad format provided
 
-        if nb != projet.nb_amd:
-            projet.nb_amd = nb
-            update_amd_list(projet)
+    if nb != projet.nb_amd:
+        projet.nb_amd = nb
+        update_amd_list(projet)
 
-        projet.last_check = func.now()
-        session.commit()
+    projet.last_check = func.now()
+    session.commit()
 
 
 def update_amd_list(projet):
 
+    global n_maj
     nb_page = int(math.ceil(projet.nb_amd/500))
     for i in range(nb_page):
         start_result = i * 500 + 1
@@ -184,6 +190,8 @@ def download_pdf(source, target):
 
 
 if __name__ == "__main__":
+    freeze_support()
+
     # Creates Bases if not exist
     Base.metadata.create_all(engine)
 
@@ -194,8 +202,15 @@ if __name__ == "__main__":
     # Update list of projects
     update_projets_list()
     # Update amd list and download new ones
-    update_amd()
+
+    manager = Manager()
+    queue = manager.Queue()
+    pool = Pool(5)
+    pool.map(update_amd, itertools.product(session.query(Projets).all(), [queue]))
+
     stop = timeit.default_timer()
 
     session.close()
-    print(stop - start)
+
+    with open('output.log','w') as log:
+        log.write(time.strftime("%Y/%m/%d - %H:%M") + ' | ' + str(ceil(stop - start)) + ' seconds')
