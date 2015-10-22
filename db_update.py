@@ -4,6 +4,7 @@
 
 import os, re, math
 import requests
+import timeit
 from lxml import html
 
 from sqlalchemy import Column, Boolean, Integer, String, create_engine, func
@@ -52,7 +53,6 @@ def get_or_create(session, model, **kwargs):
     else:
         instance = model(**kwargs)
         session.add(instance)
-        session.commit()
         return instance, True
 
 
@@ -98,6 +98,7 @@ def update_projets_list():
         for j, examen in enumerate(list_examen_id):
             get_or_create(session, Projets, n_dossier=list_dossier_id[i], cat_dossier=categorie,
                                      nom_dossier=projet, n_examen=list_examen_id[j], nom_examen=list_examen_name[j])
+        session.commit()
 
 
 def update_amd():
@@ -135,7 +136,7 @@ def update_amd_list(projet):
             response = requests.get(query_url)
             data = response.json()
         except:
-            data['data_table'][0] = ['|||||||||||']  # Website can provide bad formating response to request
+            data['data_table'][0] = '|||||||||||'  # Website can provide bad formating response to request
 
         for j, amd in enumerate(data['data_table']):
             temp_list = data['data_table'][j].split('|')
@@ -143,6 +144,13 @@ def update_amd_list(projet):
                                                 n_amendement=temp_list[5], url_amendement=temp_list[6])
             if not temp_amd.downloaded_status:
                 download_amd(temp_amd)
+        session.commit()
+
+
+def update_downloaded():
+    for amendement in session.query(Amendements).all():
+        if not amendement.downloaded_status:
+            download_amd(amendement)
 
 
 def download_amd(amendement):
@@ -159,6 +167,8 @@ def download_amd(amendement):
     target_file = raw_path + "\\"+ amd_path +"\\" + file_name
 
     amendement.downloaded_status = download_pdf(url_source, target_file)
+    if amendement.downloaded_status:
+        amendement.date_created = func.now()
 
 
 def download_pdf(source, target):
@@ -177,8 +187,15 @@ if __name__ == "__main__":
     # Creates Bases if not exist
     Base.metadata.create_all(engine)
 
-    # Update list of projects and update amd list if number changed
+    start = timeit.default_timer()
+
+    # Retry to download last failed
+    update_downloaded()
+    # Update list of projects
     update_projets_list()
+    # Update amd list and download new ones
     update_amd()
+    stop = timeit.default_timer()
 
     session.close()
+    print(stop - start)
