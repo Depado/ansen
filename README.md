@@ -1,3 +1,9 @@
 # recup-outil-lois
 
-This python program, get all the amendements from the Assemblee Nationale website and pull all files to store in a SQLite DB.
+Get law project from AN and SEN website
+Archives every hour, all new law project published
+Provides a web service:
+- Register users
+- Follow law project
+- Auto mailing if desired
+- Package in a single PDF when range of laws is pulled

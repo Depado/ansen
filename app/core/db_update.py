@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 # __author__ = 'Benjamin'
 
-import os, re, math
+import os, sys, re, math
 import requests
 import time, timeit
 from lxml import html

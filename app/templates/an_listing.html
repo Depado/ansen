@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1>Hi, {{ user.nickname }}!</h1>
+    {% for projet in projets %}
+    <p>
+      {{ projet.name }} : <b>{{ projet.nb_amd }}</b> amendements
+    </p>
+    {% endfor %}
+{% endblock %}
