@@ -1,4 +1,4 @@
-# recup-outil-lois
+# AnSen script, web implemtentation
 
 Get law project from AN and SEN website
 Archives every hour, all new law project published
