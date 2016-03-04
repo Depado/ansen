@@ -1,0 +1,12 @@
+import os
+
+BASEDIR = os.path.abspath(os.path.dirname(__file__))
+SQLALCHEMY_DATABASE_URI = 'postgresql://localhost/ansen'
+SQLALCHEMY_MIGRATE_REPO = os.path.join(BASEDIR, 'db_repository')
+SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+CSRF_ENABLED = True
+SECRET_KEY = 'change-that'
+DEBUG = True
+SERVER_NAME = "flask.dev:5000"
+LOG_FILE = "log/ansen.log"

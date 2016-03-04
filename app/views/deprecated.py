@@ -2,7 +2,7 @@ import os
 
 from flask import render_template, flash, redirect
 from app import app
-from .forms import LoginForm
+from app.forms import LoginForm
 
 from sqlalchemy import Column, Integer, String, create_engine, func
 from sqlalchemy.types import DateTime
@@ -37,9 +37,8 @@ def login():
         flash('Login requested for OpenID="%s", remember_me=%s' %
               (form.openid.data, str(form.remember_me.data)))
         return redirect('/index')
-    return render_template('login.html',
-                           title='Sign In',
-                           form=form)
+    return render_template('login.html', title='Sign In', form=form)
+
 
 @app.route('/')
 @app.route('/index')
@@ -55,10 +54,8 @@ def index():
             'body': 'The Avengers movie was so cool!'
         }
     ]
-    return render_template("index.html",
-                           title='Home',
-                           user=user,
-                           posts=posts)
+    return render_template("index.html", title='Home', user=user, posts=posts)
+
 
 @app.route('/sen')
 @app.route('/an')
@@ -66,9 +63,6 @@ def an():
     user = {'nickname': 'Benjamin'}
     projets = []
     for projet in session.query(tableProjets).all():
-        projets.append({ 'name' : projet.nom_dossier, 'nb_amd' : projet.nb_amd})
+        projets.append({'name': projet.nom_dossier, 'nb_amd': projet.nb_amd})
 
-    return render_template("an_listing.html",
-                       title='AN - Liste',
-                       user=user,
-                       projets = projets)
+    return render_template("an_listing.html", title='AN - Liste', user=user, projets=projets)
