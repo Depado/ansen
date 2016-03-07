@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
+
 from datetime import datetime
 
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask.ext.admin.contrib.sqla import ModelView
 
-from app import app, db
+from app.models import AuthMixin
+from app import app, db, login_manager
 
 
 class User(db.Model):
@@ -111,3 +114,13 @@ class User(db.Model):
 
     def __str__(self):
         return self.username
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return db.session.query(User).get(user_id)
+
+
+class UserView(AuthMixin, ModelView):
+    def __init__(self, session, **kwargs):
+        super(UserView, self).__init__(User, session, **kwargs)

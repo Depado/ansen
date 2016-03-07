@@ -1,3 +1,4 @@
 # -*- coding: utf-8 -*-
 
-from .user import User
+from .admin import AuthMixin, AuthIndex
+from .user import User, UserView

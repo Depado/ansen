@@ -6,6 +6,7 @@ from logging.handlers import RotatingFileHandler
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from flask_admin import Admin
 
 from werkzeug.contrib.fixers import ProxyFix
 
@@ -31,4 +32,14 @@ login_manager.session_protection = 'strong'
 # Database initilization
 db = SQLAlchemy(app)
 
+
+# Admin initialization
+from app.models import AuthIndex
+from app.models import UserView
+
+admin = Admin(app, 'Ansen Admin', index_view=AuthIndex(), template_mode='bootstrap3')
+
+admin.add_view(UserView(db.session, endpoint='user'))
+
+# Importing the views
 from app.views import *
